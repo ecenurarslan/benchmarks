@@ -52,7 +52,7 @@ def benchmark(loopcount, workers, memory, matn, outdir, name):
     def flops(x):
         return {'flops': compute_flops(loopcount, matn)}
 
-    pw = pywren.ibm_cf_executor(runtime_memory=memory)
+    pw = pywren.function_executor(runtime_memory=memory)
     futures = pw.map(flops, range(workers))
     results = pw.get_result()
     pw.plot(dst='{}/{}'.format(outdir, name))
