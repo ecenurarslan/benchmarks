@@ -2,8 +2,8 @@
 
 ## Execution Timeline | Histogram
 <p align="center">
-  <img width="47%" src="1000_histogram.png"></img>
-  <img width="47%" src="1000_timeline.png"></img>
+  <img width="47%" height="300" src="1000_timeline.png"></img>
+  <img width="47%" height="300" src="1000_histogram.png"></img>
 </p>
 
 ## FLOP rates | Peak and effective GLOPS

@@ -1,4 +1,4 @@
-# Google Cloud Functions Storage Results
+# IBM Cloud Functions Storage Results
 
 ## Read Write Rates | Concurrency
 <p align="center">

@@ -1,4 +1,4 @@
-# Google Cloud Functions Storage Results
+# Microsoft Azure Functions Storage Results
 
 ## Read Write Rates | Concurrency
 <p align="center">
