@@ -1,4 +1,4 @@
-# Google Cloud Functions Flops Results
+# Microsoft Azure Functions Flops Results
 
 ## Execution Timeline | Histogram
 <p align="center">

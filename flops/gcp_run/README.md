@@ -1,4 +1,4 @@
-# Google Cloud Functions Flops Results
+# Google Cloud Run Flops Results
 
 ## Execution Timeline | Histogram
 <p align="center">

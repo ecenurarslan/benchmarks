@@ -1,4 +1,4 @@
-# Google Cloud Functions Flops Results
+# IBM Cloud Functions Flops Results
 
 ## Execution Timeline | Histogram
 <p align="center">
