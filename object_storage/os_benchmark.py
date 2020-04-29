@@ -121,12 +121,12 @@ def compute_times_rates(d):
 
 def write(bucket_name, mb_per_file, number, key_prefix):
 
-    def write_object(key_name, ibm_cos):
+    def write_object(key_name, internal_storage):
         bytes_n = mb_per_file * 1024**2
         d = RandomDataGenerator(bytes_n)
         print(key_name)
         t1 = time.time()
-        ibm_cos.put_object(Bucket=bucket_name, Key=key_name, Body=d)
+        internal_storage.storage_handler.put_object(bucket_name, key_name, d)
         t2 = time.time()
 
         mb_rate = bytes_n/(t2-t1)/1e6
@@ -156,15 +156,14 @@ def read(bucket_name, number, keylist_raw, read_times):
 
     blocksize = 1024*1024
 
-    def read_object(key_name, ibm_cos):
+    def read_object(key_name, internal_storage):
         m = hashlib.md5()
         bytes_read = 0
         print(key_name)
 
         t1 = time.time()
         for unused in range(read_times):
-            res = ibm_cos.get_object(Bucket=bucket_name, Key=key_name)
-            fileobj = res['Body']
+            fileobj = internal_storage.storage_handler.get_object(bucket_name, key_name, stream=True)
             try:
                 buf = fileobj.read(blocksize)
                 while len(buf) > 0:
