@@ -4,7 +4,9 @@ import time
 import hashlib
 import pickle
 import click
-import pywren_ibm_cloud as pywren
+
+from cloudbutton import Pool
+from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
 
 
 class RandomDataGenerator(object):
@@ -121,33 +123,38 @@ def compute_times_rates(d):
 
 def write(bucket_name, mb_per_file, number, key_prefix):
 
-    def write_object(key_name, ibm_cos):
+    def write_object(key_name, storage):
         bytes_n = mb_per_file * 1024**2
         d = RandomDataGenerator(bytes_n)
         print(key_name)
-        t1 = time.time()
-        ibm_cos.put_object(Bucket=bucket_name, Key=key_name, Body=d)
-        t2 = time.time()
+        start = time.time()
+        storage.put_object(Bucket=bucket_name, Key=key_name, Body=d)
+        end = time.time()
 
-        mb_rate = bytes_n/(t2-t1)/1e6
+        mb_rate = bytes_n/(end-start)/1e6
         print('MB Rate: '+str(mb_rate))
-        return t1, t2, mb_rate
+        return start, end, mb_rate
 
     # create list of random keys
     keynames = [key_prefix + str(uuid.uuid4().hex.upper()) for unused in range(number)]
 
-    pw = pywren.function_executor(runtime_memory=1024)
-    futures = pw.map(write_object, keynames)
-    results = pw.get_result()
+    initargs = {'runtime_memory': 256}
+    with Pool(initargs=initargs) as pool:
+        start_time = time.time()
+        map_future = pool.map_async(write_object, keynames)
+        results = map_future.get()
+        worker_futures = map_future._futures
+        end_time = time.time()
 
-    run_statuses = [f._call_status for f in futures]
-    invoke_statuses = [f._call_metadata for f in futures]
+    worker_stats = [f._call_status for f in worker_futures]
+    total_time = end_time-start_time
 
-    res = {'results': results,
-           'run_statuses': run_statuses,
+    res = {'start_time': start_time,
+           'total_time': total_time,
+           'worker_stats': worker_stats,
            'bucket_name': bucket_name,
            'keynames': keynames,
-           'invoke_statuses': invoke_statuses}
+           'results': results}
 
     return res
 
@@ -156,14 +163,14 @@ def read(bucket_name, number, keylist_raw, read_times):
 
     blocksize = 1024*1024
 
-    def read_object(key_name, ibm_cos):
+    def read_object(key_name, storage):
         m = hashlib.md5()
         bytes_read = 0
         print(key_name)
 
         t1 = time.time()
         for unused in range(read_times):
-            res = ibm_cos.get_object(Bucket=bucket_name, Key=key_name)
+            res = storage.get_object(Bucket=bucket_name, Key=key_name)
             fileobj = res['Body']
             try:
                 buf = fileobj.read(blocksize)
@@ -183,23 +190,34 @@ def read(bucket_name, number, keylist_raw, read_times):
         mb_rate = bytes_read/(t2-t1)/1e6
         return t1, t2, mb_rate, bytes_read, a
 
-    pw = pywren.function_executor(runtime_memory=1024)
     if number == 0:
-        keylist = keylist_raw
+        keynames = keylist_raw
     else:
-        keylist = [keylist_raw[i % len(keylist_raw)] for i in range(number)]
+        keynames = [keylist_raw[i % len(keylist_raw)] for i in range(number)]
 
-    futures = pw.map(read_object, keylist)
-    results = pw.get_result()
+    initargs = {'runtime_memory': 512}
+    with Pool(initargs=initargs) as pool:
+        start_time = time.time()
+        map_future = pool.map_async(read_object, keynames)
+        results = map_future.get()
+        worker_futures = map_future._futures
+        end_time = time.time()
 
-    run_statuses = [f._call_status for f in futures]
-    invoke_statuses = [f._call_metadata for f in futures]
+    total_time = end_time-start_time
+    worker_stats = [f._call_status for f in worker_futures]
 
-    res = {'results': results,
-           'run_statuses': run_statuses,
-           'invoke_statuses': invoke_statuses}
+    res = {'start_time': start_time,
+           'total_time': total_time,
+           'worker_stats': worker_stats,
+           'results': results}
 
     return res
+
+
+def create_plots(res_write, res_read, outdir, name):
+    create_execution_histogram(data, "{}/{}_execution.png".format(outdir, name))
+    create_rates_histogram(data, "{}/{}_rates.png".format(outdir, name))
+    create_total_gflops_plot(data, "{}/{}_aggregate.png".format(outdir, name))
 
 
 @click.group()
@@ -217,8 +235,8 @@ def cli():
 def write_command(bucket_name, mb_per_file, number, key_prefix, outdir, name):
     if bucket_name is None:
         raise ValueError('You must provide a bucket name within --bucket_name parameter')
-    res = write(bucket_name, mb_per_file, number, key_prefix)
-    pickle.dump(res, open('{}/{}_write.pickle'.format(outdir, name), 'wb'), -1)
+    res_write = write(bucket_name, mb_per_file, number, key_prefix)
+    pickle.dump(res_write, open('{}/{}_write.pickle'.format(outdir, name), 'wb'), -1)
 
 
 @cli.command('read')
@@ -228,11 +246,36 @@ def write_command(bucket_name, mb_per_file, number, key_prefix, outdir, name):
 @click.option('--name', default='storage_benchmark', help='filename to save results in')
 @click.option('--read_times', default=1, help="number of times to read each COS key")
 def read_command(key_file, number, outdir, name, read_times):
-    d = pickle.load(open(key_file, 'rb'))
-    bucket_name = d['bucket_name']
-    keynames = d['keynames']
-    res = read(bucket_name, number, keynames, read_times)
-    pickle.dump(res, open('{}/{}_read.pickle'.format(outdir, name), 'wb'), -1)
+    if key_file:
+        res_write = pickle.load(open(key_file, 'rb'))
+    else:
+        res_write = pickle.load(open('{}/{}_write.pickle'.format(outdir, name), 'rb'))
+    bucket_name = res_write['bucket_name']
+    keynames = res_write['keynames']
+    res_read = read(bucket_name, number, keynames, read_times)
+    pickle.dump(res_read, open('{}/{}_read.pickle'.format(outdir, name), 'wb'), -1)
+
+
+@cli.command('run')
+@click.option('--bucket_name', help='bucket to save files in')
+@click.option('--mb_per_file', help='MB of each object', type=int)
+@click.option('--number', help='number of files', type=int)
+@click.option('--key_prefix', default='', help='Object key prefix')
+@click.option('--outdir', default='.', help='dir to save results in')
+@click.option('--name', default='flops_benchmark', help='filename to save results in')
+@click.option('--read_times', default=1, help="number of times to read each COS key")
+def run(bucket_name, mb_per_file, number, key_prefix, outdir, name, read_times):
+    if bucket_name is None:
+        raise ValueError('You must provide a bucket name within --bucket_name parameter')
+    res_write = write(bucket_name, mb_per_file, number, key_prefix)
+    pickle.dump(res_write, open('{}/{}_write.pickle'.format(outdir, name), 'wb'), -1)
+    time.sleep(30)
+    bucket_name = res_write['bucket_name']
+    keynames = res_write['keynames']
+    res_read = read(bucket_name, number, keynames, read_times)
+    pickle.dump(res_read, open('{}/{}_read.pickle'.format(outdir, name), 'wb'), -1)
+
+    create_plots(res_write, res_read, outdir, name)
 
 
 if __name__ == '__main__':
