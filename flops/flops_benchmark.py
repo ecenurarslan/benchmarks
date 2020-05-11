@@ -1,35 +1,10 @@
-import numpy as np
-import time
-import pywren_ibm_cloud as pywren
-import pickle as pickle
 import click
-import pandas as pd
+import time
+import numpy as np
+import pickle as pickle
 
-runtime_bins = np.linspace(0, 600, 600)
-
-
-def compute_times_rates(d):
-
-    x = np.array(d)
-
-    tzero = np.min(x[:, 0])
-    start_time = x[:, 0] - tzero
-    end_time = x[:, 1] - tzero
-
-    N = len(start_time)
-
-    runtime_jobs_hist = np.zeros((N, len(runtime_bins)))
-
-    for i in range(N):
-        s = start_time[i]
-        e = end_time[i]
-        a, b = np.searchsorted(runtime_bins, [s, e])
-        if b-a > 0:
-            runtime_jobs_hist[i, a:b] = 1
-
-    return {'start_time': start_time,
-            'end_time': end_time,
-            'runtime_jobs_hist': runtime_jobs_hist}
+from cloudbutton import Pool
+from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
 
 
 def compute_flops(loopcount, MAT_N):
@@ -37,56 +12,46 @@ def compute_flops(loopcount, MAT_N):
     A = np.arange(MAT_N**2, dtype=np.float64).reshape(MAT_N, MAT_N)
     B = np.arange(MAT_N**2, dtype=np.float64).reshape(MAT_N, MAT_N)
 
-    t1 = time.time()
+    start = time.time()
     for i in range(loopcount):
         c = np.sum(np.dot(A, B))
 
     FLOPS = 2 * MAT_N**3 * loopcount
-    t2 = time.time()
-    return FLOPS / (t2-t1)
+    end = time.time()
+    return {'flops': FLOPS / (end-start)}
 
 
-def benchmark(loopcount, workers, memory, matn, outdir, name):
-    t1 = time.time()
+def benchmark(workers, memory, loopcount, matn):
+    iterable = [(loopcount, matn) for i in range(workers)]
+    initargs = {'runtime_memory': memory}
 
-    def flops(x):
-        return {'flops': compute_flops(loopcount, matn)}
+    with Pool(initargs=initargs) as pool:
+        start_time = time.time()
+        map_future = pool.starmap_async(compute_flops, iterable)
+        worker_futures = map_future._futures
+        results = map_future.get()
+        end_time = time.time()
 
-    pw = pywren.function_executor(runtime_memory=memory)
-    futures = pw.map(flops, range(workers))
-    results = pw.get_result()
-    pw.plot(dst='{}/{}'.format(outdir, name))
+    worker_stats = [f._call_status for f in worker_futures]
+    total_time = end_time-start_time
 
-    run_statuses = [f._call_status for f in futures]
-    invoke_statuses = [f._call_metadata for f in futures]
+    print("Total time:", round(total_time, 3))
+    est_flops = workers * 2 * loopcount * matn ** 3
+    print('Estimated GFLOPS:', round(est_flops / 1e9 / total_time, 4))
 
-    total_time = time.time() - t1
-    print("total time", total_time)
-    est_flop = workers * 2 * loopcount * matn ** 3
-
-    print(est_flop / 1e9 / total_time, "GFLOPS")
-    res = {'total_time': total_time,
-           'est_flop': est_flop,
-           'run_statuses': run_statuses,
-           'invoke_statuses': invoke_statuses,
+    res = {'start_time': start_time,
+           'total_time': total_time,
+           'est_flops': est_flops,
+           'worker_stats': worker_stats,
            'results': results}
 
     return res
 
 
-def results_to_dataframe(benchmark_data):
-    func_df = pd.DataFrame(benchmark_data['results']).rename(columns={'flops': 'intra_func_flops'})
-    statuses_df = pd.DataFrame(benchmark_data['run_statuses'])
-    invoke_df = pd.DataFrame(benchmark_data['invoke_statuses'])
-
-    est_total_flops = benchmark_data['est_flop'] / benchmark_data['workers']
-    results_df = pd.concat([statuses_df, invoke_df, func_df], axis=1)
-    results_df['workers'] = benchmark_data['workers']
-    results_df['loopcount'] = benchmark_data['loopcount']
-    results_df['MATN'] = benchmark_data['MATN']
-    results_df['est_flops'] = est_total_flops
-
-    return results_df
+def create_plots(data, outdir, name):
+    create_execution_histogram(data, "{}/{}_execution.png".format(outdir, name))
+    create_rates_histogram(data, "{}/{}_rates.png".format(outdir, name))
+    create_total_gflops_plot(data, "{}/{}_gflops.png".format(outdir, name))
 
 
 @click.command()
@@ -97,12 +62,15 @@ def results_to_dataframe(benchmark_data):
 @click.option('--loopcount', default=6, help='Number of matmuls to do.', type=int)
 @click.option('--matn', default=1024, help='size of matrix', type=int)
 def run_benchmark(workers, memory, outdir, name, loopcount, matn):
-    res = benchmark(loopcount, workers, memory, matn, outdir, name)
+    res = benchmark(workers, memory, loopcount, matn)
+
     res['loopcount'] = loopcount
     res['workers'] = workers
     res['MATN'] = matn
 
     pickle.dump(res, open('{}/{}.pickle'.format(outdir, name), 'wb'), -1)
+
+    create_plots(res, outdir, name)
 
 
 if __name__ == "__main__":
