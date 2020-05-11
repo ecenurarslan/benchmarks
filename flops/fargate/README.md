@@ -9,7 +9,9 @@ When we talk about Fargate Tasks, the main limitation is the maximum number of c
 Fargate Services however, can have 1000 concurrent containers, but the absence of autoscaling to 0 of these means that it is also not well suited for PyWren model of execution.
 
 Sources:
-https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-quotas.html 
+
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-quotas.html
+
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-autoscaling-targettracking.html
 
 
