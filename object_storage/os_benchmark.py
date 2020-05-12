@@ -6,7 +6,7 @@ import pickle
 import click
 
 from cloudbutton import Pool
-from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
+from plots import create_execution_histogram, create_rates_histogram, create_agg_bdwth_plot
 
 
 class RandomDataGenerator(object):
@@ -93,52 +93,25 @@ class RandomDataGenerator(object):
 runtime_bins = np.linspace(0, 50, 50)
 
 
-def compute_times_rates(d):
-
-    x = np.array(d)
-    tzero = np.min(x[:, 0])
-    start_time = x[:, 0] - tzero
-    end_time = x[:, 1] - tzero
-    rate = x[:, 2]
-
-    N = len(start_time)
-
-    runtime_rate_hist = np.zeros((N, len(runtime_bins)))
-    runtime_jobs_hist = np.zeros((N, len(runtime_bins)))
-
-    for i in range(N):
-        s = start_time[i]
-        e = end_time[i]
-        a, b = np.searchsorted(runtime_bins, [s, e])
-        if b-a > 0:
-            runtime_rate_hist[i, a:b] = rate[i]
-            runtime_jobs_hist[i, a:b] = 1
-
-    return {'start_time': start_time,
-            'end_time': end_time,
-            'rate': rate,
-            'runtime_rate_hist': runtime_rate_hist,
-            'runtime_jobs_hist': runtime_jobs_hist}
-
-
 def write(bucket_name, mb_per_file, number, key_prefix):
 
     def write_object(key_name, storage):
         bytes_n = mb_per_file * 1024**2
         d = RandomDataGenerator(bytes_n)
         print(key_name)
-        start = time.time()
+        start_time = time.time()
         storage.put_object(Bucket=bucket_name, Key=key_name, Body=d)
-        end = time.time()
+        end_time = time.time()
 
-        mb_rate = bytes_n/(end-start)/1e6
+        mb_rate = bytes_n/(end_time-start_time)/1e6
         print('MB Rate: '+str(mb_rate))
-        return start, end, mb_rate
+
+        return {'start_time': start_time, 'end_time': end_time, 'mb_rate': mb_rate}
 
     # create list of random keys
     keynames = [key_prefix + str(uuid.uuid4().hex.upper()) for unused in range(number)]
 
-    initargs = {'runtime_memory': 256}
+    initargs = {'runtime_memory': 1024}
     with Pool(initargs=initargs) as pool:
         start_time = time.time()
         map_future = pool.map_async(write_object, keynames)
@@ -168,7 +141,7 @@ def read(bucket_name, number, keylist_raw, read_times):
         bytes_read = 0
         print(key_name)
 
-        t1 = time.time()
+        start_time = time.time()
         for unused in range(read_times):
             res = storage.get_object(Bucket=bucket_name, Key=key_name)
             fileobj = res['Body']
@@ -184,18 +157,18 @@ def read(bucket_name, number, keylist_raw, read_times):
             except Exception as e:
                 print(e)
                 pass
-        t2 = time.time()
+        end_time = time.time()
+        mb_rate = bytes_read/(end_time-start_time)/1e6
+        print('MB Rate: '+str(mb_rate))
 
-        a = m.hexdigest()
-        mb_rate = bytes_read/(t2-t1)/1e6
-        return t1, t2, mb_rate, bytes_read, a
+        return {'start_time': start_time, 'end_time': end_time, 'mb_rate': mb_rate, 'bytes_read': bytes_read}
 
     if number == 0:
         keynames = keylist_raw
     else:
         keynames = [keylist_raw[i % len(keylist_raw)] for i in range(number)]
 
-    initargs = {'runtime_memory': 512}
+    initargs = {'runtime_memory': 1024}
     with Pool(initargs=initargs) as pool:
         start_time = time.time()
         map_future = pool.map_async(read_object, keynames)
@@ -215,9 +188,9 @@ def read(bucket_name, number, keylist_raw, read_times):
 
 
 def create_plots(res_write, res_read, outdir, name):
-    create_execution_histogram(data, "{}/{}_execution.png".format(outdir, name))
-    create_rates_histogram(data, "{}/{}_rates.png".format(outdir, name))
-    create_total_gflops_plot(data, "{}/{}_aggregate.png".format(outdir, name))
+    create_execution_histogram(res_write, res_read, "{}/{}_execution.png".format(outdir, name))
+    create_rates_histogram(res_write, res_read, "{}/{}_rates.png".format(outdir, name))
+    create_agg_bdwth_plot(res_write, res_read, "{}/{}_agg_bdwth.png".format(outdir, name))
 
 
 @click.group()
@@ -265,16 +238,22 @@ def read_command(key_file, number, outdir, name, read_times):
 @click.option('--name', default='flops_benchmark', help='filename to save results in')
 @click.option('--read_times', default=1, help="number of times to read each COS key")
 def run(bucket_name, mb_per_file, number, key_prefix, outdir, name, read_times):
-    if bucket_name is None:
-        raise ValueError('You must provide a bucket name within --bucket_name parameter')
-    res_write = write(bucket_name, mb_per_file, number, key_prefix)
-    pickle.dump(res_write, open('{}/{}_write.pickle'.format(outdir, name), 'wb'), -1)
-    time.sleep(30)
-    bucket_name = res_write['bucket_name']
-    keynames = res_write['keynames']
-    res_read = read(bucket_name, number, keynames, read_times)
-    pickle.dump(res_read, open('{}/{}_read.pickle'.format(outdir, name), 'wb'), -1)
-
+    if True:
+        print('Executing Write Test:')
+        if bucket_name is None:
+            raise ValueError('You must provide a bucket name within --bucket_name parameter')
+        res_write = write(bucket_name, mb_per_file, number, key_prefix)
+        pickle.dump(res_write, open('{}/{}_write.pickle'.format(outdir, name), 'wb'), -1)
+        print('Sleeping 20 seconds...')
+        time.sleep(20)
+        print('Executing Read Test:')
+        bucket_name = res_write['bucket_name']
+        keynames = res_write['keynames']
+        res_read = read(bucket_name, number, keynames, read_times)
+        pickle.dump(res_read, open('{}/{}_read.pickle'.format(outdir, name), 'wb'), -1)
+    else:
+        res_write = pickle.load(open('{}/{}_write.pickle'.format(outdir, name), 'rb'))
+        res_read = pickle.load(open('{}/{}_read.pickle'.format(outdir, name), 'rb'))
     create_plots(res_write, res_read, outdir, name)
 
 

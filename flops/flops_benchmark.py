@@ -62,14 +62,14 @@ def create_plots(data, outdir, name):
 @click.option('--loopcount', default=6, help='Number of matmuls to do.', type=int)
 @click.option('--matn', default=1024, help='size of matrix', type=int)
 def run_benchmark(workers, memory, outdir, name, loopcount, matn):
-    res = benchmark(workers, memory, loopcount, matn)
-
-    res['loopcount'] = loopcount
-    res['workers'] = workers
-    res['MATN'] = matn
-
-    pickle.dump(res, open('{}/{}.pickle'.format(outdir, name), 'wb'), -1)
-
+    if True:
+        res = benchmark(workers, memory, loopcount, matn)
+        res['loopcount'] = loopcount
+        res['workers'] = workers
+        res['MATN'] = matn
+        pickle.dump(res, open('{}/{}.pickle'.format(outdir, name), 'wb'), -1)
+    else:
+        res = pickle.load(open('{}/{}.pickle'.format(outdir, name), 'rb'))
     create_plots(res, outdir, name)
 
 

@@ -3,6 +3,7 @@ import pylab
 import logging
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib.collections import LineCollection
 
 pylab.switch_backend("Agg")
@@ -13,9 +14,9 @@ def create_execution_histogram(benchmark_data, dst):
     start_time = benchmark_data['start_time']
     time_rates = [(f['start_time'], f['end_time']) for f in benchmark_data['worker_stats']]
     total_calls = len(time_rates)
-    func_start_time = min([tr[0]-start_time for tr in time_rates])
-    func_end_time = max([tr[1]-start_time for tr in time_rates])
-    max_seconds = int(max([tr[1]-start_time for tr in time_rates])+func_start_time)
+
+    max_seconds = int(max([tr[1]-start_time for tr in time_rates])*1.1)
+    max_seconds = 8 * round(max_seconds/8)
 
     runtime_bins = np.linspace(0, max_seconds, max_seconds)
 
@@ -60,7 +61,7 @@ def create_execution_histogram(benchmark_data, dst):
     ax.set_ylim(-0.02*total_calls, total_calls*1.02)
 
     xplot_step = max(int(max_seconds/8), 1)
-    x_ticks = np.arange(int(max_seconds//xplot_step + 2)) * xplot_step
+    x_ticks = np.arange(int(max_seconds//xplot_step)+1) * xplot_step
     ax.set_xlim(0, max_seconds)
     ax.set_xticks(x_ticks)
     for x in x_ticks:
@@ -85,11 +86,18 @@ def create_rates_histogram(benchmark_data, dst):
 
     fig = pylab.figure(figsize=(5, 5))
     ax = fig.add_subplot(1, 1, 1)
-
     ax.hist(flops, bins=np.arange(0, flops.max()*1.2), histtype='bar', ec='black')
     ax.set_xlabel('GFLOPS')
     ax.set_ylabel('Total functions')
     ax.yaxis.grid(True)
+    """
+    fig = pylab.figure(figsize=(5, 5))
+    sns.distplot(flops, label='GFLOPS Rate', kde=False, hist_kws=dict(alpha=0.8, edgecolor="k", linewidth=1))
+    pylab.legend()
+    pylab.xlabel("GFLOPS")
+    pylab.ylabel("Total functions")
+    pylab.grid(True, axis='y')
+    """
 
     dst = os.path.expanduser(dst) if '~' in dst else dst
 
