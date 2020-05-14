@@ -96,11 +96,16 @@ runtime_bins = np.linspace(0, 50, 50)
 def write(bucket_name, mb_per_file, number, key_prefix):
 
     def write_object(key_name, storage):
+        from google.cloud import storage
         bytes_n = mb_per_file * 1024**2
         d = RandomDataGenerator(bytes_n)
         print(key_name)
         start_time = time.time()
-        storage.put_object(Bucket=bucket_name, Key=key_name, Body=d)
+        # storage.put_object(Bucket=bucket_name, Key=key_name, Body=d)
+        client = storage.Client()
+        bucket = client.get_bucket(bucket_name)
+        blob = bucket.blob(blob_name=key_name)
+        blob.upload_from_file(d)
         end_time = time.time()
 
         mb_rate = bytes_n/(end_time-start_time)/1e6
@@ -137,14 +142,23 @@ def read(bucket_name, number, keylist_raw, read_times):
     blocksize = 1024*1024
 
     def read_object(key_name, storage):
+        from google.cloud import storage
+        from io import BytesIO
         m = hashlib.md5()
         bytes_read = 0
         print(key_name)
 
         start_time = time.time()
         for unused in range(read_times):
-            res = storage.get_object(Bucket=bucket_name, Key=key_name)
-            fileobj = res['Body']
+            # res = storage.get_object(Bucket=bucket_name, Key=key_name)
+            client = storage.Client()
+            bucket = client.get_bucket(bucket_name)
+            blob = bucket.blob(blob_name=key_name)
+            stream = BytesIO()
+            blob.download_to_file(stream)
+            stream.seek(0) # Retrun to the initial buffer position
+            fileobj = stream
+            # fileobj = res['Body']
             try:
                 buf = fileobj.read(blocksize)
                 while len(buf) > 0:
