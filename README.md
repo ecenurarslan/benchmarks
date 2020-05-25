@@ -12,7 +12,7 @@ FaaS Service Flops benchmark:
 Object Storage benchmark from FaaS Service:
 
 - [IBM Cloud Object Storage](object_storage/ibm_cos)
-- [AWS Lambda](object_storage/aws_s3)
+- [AWS S3](object_storage/aws_s3)
 - [Microsoft Azure Blob](object_storage/azure_blob)
 - [Google Storage](object_storage/google_storage)
 - [Alibaba Aliyun Object Storage Service](object_storage/aliyun_oss)
