@@ -119,7 +119,7 @@ def write(bucket_name, mb_per_file, number, key_prefix):
         worker_futures = map_future._futures
         end_time = time.time()
 
-    worker_stats = [f._call_status for f in worker_futures]
+    worker_stats = [f.stats for f in worker_futures]
     total_time = end_time-start_time
 
     res = {'start_time': start_time,
@@ -177,7 +177,7 @@ def read(bucket_name, number, keylist_raw, read_times):
         end_time = time.time()
 
     total_time = end_time-start_time
-    worker_stats = [f._call_status for f in worker_futures]
+    worker_stats = [f.stats for f in worker_futures]
 
     res = {'start_time': start_time,
            'total_time': total_time,

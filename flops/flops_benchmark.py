@@ -32,7 +32,7 @@ def benchmark(workers, memory, loopcount, matn):
         results = map_future.get()
         end_time = time.time()
 
-    worker_stats = [f._call_status for f in worker_futures]
+    worker_stats = [f.stats for f in worker_futures]
     total_time = end_time-start_time
 
     print("Total time:", round(total_time, 3))

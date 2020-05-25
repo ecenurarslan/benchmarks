@@ -41,7 +41,7 @@ def create_execution_histogram(res_write, res_read, dst):
     for plot_i, (datum, l, c) in enumerate([(res_write, 'Write', WRITE_COLOR), (res_read, 'Read', READ_COLOR)]):
 
         start_time = datum['start_time']
-        time_rates = [(f['start_time'], f['end_time']) for f in datum['worker_stats']]
+        time_rates = [(f['start_tstamp'], f['end_tstamp']) for f in datum['worker_stats']]
         total_calls = len(time_rates)
 
         if plot_i == 0:
@@ -60,7 +60,7 @@ def create_execution_histogram(res_write, res_read, dst):
 
         ax.add_collection(line_segments)
 
-        ax.plot(runtime_bins, time_hist['runtime_calls_hist'].sum(axis=0), label='Concurrent {} Functions'.format(l), zorder=-1, c=c)
+        ax.plot(runtime_bins, time_hist['runtime_calls_hist'].sum(axis=0), label='Parallel {} Functions'.format(l), zorder=-1, c=c)
 
         yplot_step = int(np.max([1, total_calls/20]))
         y_ticks = np.arange(total_calls//yplot_step + 2) * yplot_step
