@@ -73,7 +73,11 @@ span {
 /* Navbar */
 
 .my-navbar-bg {
-    background-color: #2c3e50;
+    background-color: #2c3e50 !important;
+}
+
+.table-head-bg {
+    background-color: #475b79 !important;
 }
 
 .navbar-brand {
@@ -95,5 +99,11 @@ nav {
 }
 
 .card-bg {
-    background-color: #6689c2;
+    border-color: #475b79;
+    border-width: 2px;
+}
+
+.card-header-bg {
+    background-color: #475b79;
+    color: white;
 }
