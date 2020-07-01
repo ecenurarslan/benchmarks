@@ -23,6 +23,9 @@
     <link href="css/dashboard.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 
+    <!-- chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
 </head>
 
 <body>
@@ -39,9 +42,6 @@
                 <ul class="navbar-nav">
                     <li class="nav-item active">
                         <a class="nav-link" href=""><b>Serverless benchmark</b></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://cloudbutton.github.io">CloudButton toolkit</a>
                     </li>
                 </ul>
                 <br class="d-xl-none">
@@ -153,9 +153,9 @@
     </nav>
 </header>
 
-<div class="container">
-    <div class="row">
-        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+<div>
+    <div class="row" style="margin:0;">
+        <nav class="col-md-2 d-none d-lg-block bg-light sidebar">
             <br>
             <br>
             <div class="sidebar-sticky">
@@ -235,62 +235,266 @@
                         </a>
                     </li>
                 </ul>
-                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <span>Benchmarks summary</span>
-                </h6>
-                <ul class="nav flex-column mb-2">
-                    <li class="nav-item">
-                        <a class="nav-link" href="summary.html">
-                            <span data-feather="file-text"></span>
-                            Summary
-                        </a>
-                    </li>
-                </ul>
             </div>
         </nav>
 
-        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-            <p>
-            </p>
-            <div class="row featurette" style="align-items:center;">
-                <div class="col-md-12">
-                    <h2 class="featurette-heading">CloudButton <span class="text-muted">Serverless Benchmark </span>
-                    </h2>
-                    <p class="lead">CloudButton Serverless Benchmark aims to become a general tool to compare Serverless
-                        offerings
-                        (Compute, Storage) in different public Cloud providers. All the source code is available and
-                        part of the
-                        <a href="https://cloudbutton.github.io">CloudButton toolkit</a>.
-                    </p>
+        <main role="main" class="col-lg-9 ml-sm-auto col-lg-10 pt-3 px-4">
+            <div class="position-relative overflow-hidden mt-5 mb-4 text-center">
+                <h1 class="font-weight-normal">CloudButton <span
+                        class="text-muted">Serverless Benchmark </span></h1>
+                <br>
+                <p class="lead font-weight-normal">CloudButton Serverless Benchmark aims to become a general tool to
+                    compare Serverless
+                    offerings
+                    (Compute, Storage) in different public Cloud providers.</p>
+            </div>
+
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-6 text-center overflow-hidden mb-4">
+                        <div>
+                            <h2 class="display-5">FLOPS Benchmark</h2>
+                            <p class="lead">CloudButton FLOPS benchmark evaluates compute power and scalability of
+                                cloud providers by running multiple compute intensive tasks concurrently. Benchmark
+                                source available <a
+                                        href="https://github.com/cloudbutton/benchmarks/blob/master/flops/flops_benchmark.py">here</a>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 text-center overflow-hidden mb-4">
+                        <div>
+                            <h2 class="display-5">Storage Benchmark</h2>
+                            <p class="lead">CloudButton Storage benchmark evaluates the throughput of read and write
+                                operations to the object storage services of different cloud providers by running
+                                such
+                                operations in many tasks and concurrently. Benchmark source available <a
+                                        href="https://github.com/cloudbutton/benchmarks/blob/master/object_storage/os_benchmark.py">here</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-6 text-center overflow-hidden mb-5">
+                        <nav>
+                            <div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
+                                <a class="nav-item nav-link text-uppercase active" id="flops-1000-tab"
+                                   data-toggle="tab"
+                                   href="#flops-1000" role="tab" aria-controls="flops-1000"
+                                   aria-selected="false">1000 functions</a>
+                                <a class="nav-item nav-link text-uppercase" id="flops-100-tab"
+                                   data-toggle="tab"
+                                   href="#flops-100" role="tab" aria-controls="flops-100"
+                                   aria-selected="true">
+                                    100 functions
+                                </a>
+                            </div>
+                        </nav>
+                        <div class="tab-content" id="nav-tabContent">
+                            <div class="tab-pane fade" id="flops-100" role="tabpanel"
+                                 aria-labelledby="nav-home-tab">
+                                <table class="table">
+                                    <thead class="my-navbar-bg text-white">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Provider and service</th>
+                                        <th scope="col">Execution time (seconds)</th>
+                                    </tr>
+                                    </thead>
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th scope="row">1</th>
+                                        <th>Aliyun Function Compute</th>
+                                        <th>40.07</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tr>
+                                        <th scope="row">2</th>
+                                        <td>GCP Run</td>
+                                        <td>66.47</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">3</th>
+                                        <td>AWS Lambda</td>
+                                        <td>71.99</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">4</th>
+                                        <td>IBM Cloud Functions</td>
+                                        <td>80.10</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">5</th>
+                                        <td>GCP Functions</td>
+                                        <td>89.63</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">6</th>
+                                        <td>Microsoft Azure Functions</td>
+                                        <td>2316.89</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade show active" id="flops-1000" role="tabpanel"
+                                 aria-labelledby="nav-profile-tab">
+                                <table class="table">
+                                    <thead class="my-navbar-bg text-white">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Provider and service</th>
+                                        <th scope="col">Execution time (seconds)</th>
+                                    </tr>
+                                    </thead>
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th scope="row">1</th>
+                                        <th>IBM Cloud Functions</th>
+                                        <th>93.87</th>
+                                    </tr>
+                                    </thead>
+                                    <tr>
+                                        <th scope="row">2</th>
+                                        <td>AWS Lambda</td>
+                                        <td>91.51</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">3</th>
+                                        <td>GCP Run</td>
+                                        <td>102.12</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">4</th>
+                                        <td>Aliyun Function Compute</td>
+                                        <td>171.31</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">5</th>
+                                        <td>GCP Functions</td>
+                                        <td>191.87</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">6</th>
+                                        <td>Microsoft Azure Functions</td>
+                                        <td>6781.14</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 text-center overflow-hidden mb-lg-0">
+                        <nav>
+                            <div class="nav nav-tabs nav-fill" id="nav-tab2" role="tablist">
+                                <a class="nav-item nav-link active text-uppercase" id="storage-1000-tab"
+                                   data-toggle="tab"
+                                   href="#storage-1000" role="tab" aria-controls="storage-1000"
+                                   aria-selected="false">1000 functions</a>
+                                <a class="nav-item nav-link text-uppercase" id="storage-100-tab"
+                                   data-toggle="tab"
+                                   href="#storage-100" role="tab" aria-controls="storage-100"
+                                   aria-selected="true">
+                                    100 functions
+                                </a>
+                            </div>
+                        </nav>
+                        <div class="tab-content" id="">
+                            <div class="tab-pane fade" id="storage-100" role="tabpanel"
+                                 aria-labelledby="nav-home-tab">
+                                <table class="table">
+                                    <thead class="my-navbar-bg text-white">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Provider and service</th>
+                                        <th scope="col" style="font-size:14px;">Peak read rate (GB/s)</th>
+                                        <th scope="col" style="font-size:14px;">Peak write rate (GB/s)</th>
+                                    </tr>
+                                    </thead>
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th scope="row">1</th>
+                                        <th>AWS S3</th>
+                                        <th>7.2</th>
+                                        <th>6.7</th>
+                                    </tr>
+                                    </thead>
+                                    <tr>
+                                        <th scope="row">2</th>
+                                        <td>IBM COS</td>
+                                        <td>6.8</td>
+                                        <td>2.2</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">3</th>
+                                        <td>Google Cloud Storage</td>
+                                        <td>2.7</td>
+                                        <td>1.2</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">4</th>
+                                        <td>Aliyun FC Object Storage</td>
+                                        <td>1.1</td>
+                                        <td>0.9</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">5</th>
+                                        <td>Microsoft Azure Functions Blob Storage</td>
+                                        <td>0.3</td>
+                                        <td>0.3</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade show active" id="storage-1000" role="tabpanel"
+                                 aria-labelledby="nav-profile-tab">
+                                <table class="table">
+                                    <thead class="my-navbar-bg text-white">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Provider and service</th>
+                                        <th scope="col" style="font-size:14px;">Peak read rate (GB/s)</th>
+                                        <th scope="col" style="font-size:14px;">Peak write rate (GB/s)</th>
+                                    </tr>
+                                    </thead>
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th scope="row">1</th>
+                                        <th>AWS S3</th>
+                                        <th>81.5</th>
+                                        <th>67.0</th>
+                                    </tr>
+                                    </thead>
+                                    <tr>
+                                        <th scope="row">2</th>
+                                        <td>IBM COS</td>
+                                        <td>27.0</td>
+                                        <td>11.5</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">3</th>
+                                        <td>Google Cloud Storage</td>
+                                        <td>11.9</td>
+                                        <td>5.1</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">4</th>
+                                        <td>Aliyun FC Object Storage</td>
+                                        <td>0.8</td>
+                                        <td>0.9</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">5</th>
+                                        <td>Microsoft Azure Functions Blob Storage</td>
+                                        <td>0.3</td>
+                                        <td>0.5</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <hr class="featurette-divider">
-            <div class="row featurette" style="align-items:center;">
-                <div class="col-md-8">
-                    <h2 class="featurette-heading">FLOPS <span class="text-muted"> Benchmark </span>
-                    </h2>
-                    <p class="lead">CloudButton FLOPS benchmark evaluates compute power and scalability of cloud
-                        providers by running multiple compute intensive tasks concurrently.</p>
-                </div>
-                <div class="col-md-2">
-                </div>
-                <div class="col-md-2">
-                    <span class="fa fa-cogs fa-5x"></span>
-                </div>
-            </div>
-            <hr class="featurette-divider">
-            <div class="row featurette" style="align-items:center;">
-                <div class="col-md-8 order-md-2">
-                    <h2 class="featurette-heading">Storage <span class="text-muted"> Benchmark </span>
-                    </h2>
-                    <p class="lead">CloudButton Storage benchmark evaluates the throughput of read and write
-                        operations to the object storage services of different cloud providers by running such
-                        operations in many tasks and concurrently.</p>
-                </div>
-                <div class="col-md-4 order-md-1">
-                    <span class="fa fa-database fa-5x"></span>
-                </div>
-            </div>
+
+
             <hr class="featurette-divider">
             <!-- FOOTER -->
             <footer class="container">
