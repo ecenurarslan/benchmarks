@@ -1,3 +1,19 @@
+#
+# Copyright Cloudlab URV 2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import uuid
 import numpy as np
 import time
@@ -5,7 +21,8 @@ import hashlib
 import pickle
 import click
 
-from cloudbutton import Pool
+from pywren_ibm_cloud.executor import FunctionExecutor
+#from cloudbutton.engine.executor import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_agg_bdwth_plot
 
 
@@ -100,7 +117,7 @@ def write(bucket_name, mb_per_file, number, key_prefix):
         d = RandomDataGenerator(bytes_n)
         print(key_name)
         start_time = time.time()
-        storage.put_object(Bucket=bucket_name, Key=key_name, Body=d)
+        storage.put_object(bucket_name, key_name, d)
         end_time = time.time()
 
         mb_rate = bytes_n/(end_time-start_time)/1e6
@@ -111,13 +128,11 @@ def write(bucket_name, mb_per_file, number, key_prefix):
     # create list of random keys
     keynames = [key_prefix + str(uuid.uuid4().hex.upper()) for unused in range(number)]
 
-    initargs = {'runtime_memory': 1024}
-    with Pool(initargs=initargs) as pool:
-        start_time = time.time()
-        map_future = pool.map_async(write_object, keynames)
-        results = map_future.get()
-        worker_futures = map_future._futures
-        end_time = time.time()
+    exc = FunctionExecutor(runtime_memory=1024)
+    start_time = time.time()
+    worker_futures = exc.map(write_object, keynames)
+    results = exc.get_result()
+    end_time = time.time()
 
     worker_stats = [f.stats for f in worker_futures]
     total_time = end_time-start_time
@@ -143,8 +158,7 @@ def read(bucket_name, number, keylist_raw, read_times):
 
         start_time = time.time()
         for unused in range(read_times):
-            res = storage.get_object(Bucket=bucket_name, Key=key_name)
-            fileobj = res['Body']
+            fileobj = storage.get_object(bucket_name, key_name, stream=True)
             try:
                 buf = fileobj.read(blocksize)
                 while len(buf) > 0:
@@ -168,13 +182,11 @@ def read(bucket_name, number, keylist_raw, read_times):
     else:
         keynames = [keylist_raw[i % len(keylist_raw)] for i in range(number)]
 
-    initargs = {'runtime_memory': 1024}
-    with Pool(initargs=initargs) as pool:
-        start_time = time.time()
-        map_future = pool.map_async(read_object, keynames)
-        results = map_future.get()
-        worker_futures = map_future._futures
-        end_time = time.time()
+    exc = FunctionExecutor(runtime_memory=1024)
+    start_time = time.time()
+    worker_futures = exc.map(read_object, keynames)
+    results = exc.get_result()
+    end_time = time.time()
 
     total_time = end_time-start_time
     worker_stats = [f.stats for f in worker_futures]
