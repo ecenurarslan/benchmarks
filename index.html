@@ -255,7 +255,8 @@
                         <div>
                             <h2 class="display-5">FLOPS Benchmark</h2>
                             <p class="lead">CloudButton FLOPS benchmark evaluates compute power and scalability of
-                                cloud providers by running multiple compute intensive tasks concurrently. Benchmark
+                                cloud providers by running multiple compute intensive tasks concurrently. Tasks are run in
+                                parallel warm <b>serverless functions</b>. Benchmark
                                 source available <a
                                         href="https://github.com/cloudbutton/benchmarks/blob/master/flops/flops_benchmark.py">here</a>.
                             </p>
@@ -267,8 +268,7 @@
                             <h2 class="display-5">Storage Benchmark</h2>
                             <p class="lead">CloudButton Storage benchmark evaluates the throughput of read and write
                                 operations to the object storage services of different cloud providers by running
-                                such
-                                operations in many tasks and concurrently. Benchmark source available <a
+                                such operations concurrently in multiple <b>serverless functions</b>. Benchmark source available <a
                                         href="https://github.com/cloudbutton/benchmarks/blob/master/object_storage/os_benchmark.py">here</a>.
                             </p>
                         </div>
