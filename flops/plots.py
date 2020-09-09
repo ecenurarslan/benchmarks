@@ -1,3 +1,19 @@
+#
+# Copyright Cloudlab URV 2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import os
 import pylab
 import logging
@@ -12,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def create_execution_histogram(benchmark_data, dst):
     start_time = benchmark_data['start_time']
-    time_rates = [(f['start_tstamp'], f['end_tstamp']) for f in benchmark_data['worker_stats']]
+    time_rates = [(f['cloud_agent_start_tstamp'], f['cloud_agent_end_tstamp']) for f in benchmark_data['worker_stats']]
     total_calls = len(time_rates)
 
     max_seconds = int(max([tr[1]-start_time for tr in time_rates])*1.1)
@@ -110,20 +126,20 @@ def create_total_gflops_plot(benchmark_data, dst):
     data_df = pd.DataFrame(benchmark_data['worker_stats'])
     data_df['est_flops'] = benchmark_data['est_flops'] / benchmark_data['workers']
 
-    max_time = np.max(data_df.end_tstamp) - tzero
+    max_time = np.max(data_df.cloud_agent_end_tstamp) - tzero
     runtime_bins = np.linspace(0, int(max_time), int(max_time), endpoint=False)
     runtime_flops_hist = np.zeros((len(data_df), len(runtime_bins)))
 
     for i in range(len(data_df)):
         row = data_df.iloc[i]
-        s = row.function_start_tstamp - tzero
-        e = row.function_end_tstamp- tzero
+        s = row.cloud_func_start_tstamp - tzero
+        e = row.cloud_func_end_tstamp - tzero
         a, b = np.searchsorted(runtime_bins, [s, e])
         if b-a > 0:
             runtime_flops_hist[i, a:b] = row.est_flops / float(b-a)
 
-    results_by_endtime = data_df.sort_values('end_tstamp')
-    results_by_endtime['job_endtime_zeroed'] = data_df.end_tstamp - tzero
+    results_by_endtime = data_df.sort_values('cloud_agent_end_tstamp')
+    results_by_endtime['job_endtime_zeroed'] = data_df.cloud_agent_end_tstamp - tzero
     results_by_endtime['flops_done'] = results_by_endtime.est_flops.cumsum()
     results_by_endtime['rolling_flops_rate'] = results_by_endtime.flops_done/results_by_endtime.job_endtime_zeroed
 

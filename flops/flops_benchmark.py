@@ -1,9 +1,26 @@
+#
+# Copyright Cloudlab URV 2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import click
 import time
 import numpy as np
 import pickle as pickle
 
-from cloudbutton import Pool
+from pywren_ibm_cloud.executor import FunctionExecutor
+#from cloudbutton.engine.executor import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
 
 
@@ -23,14 +40,12 @@ def compute_flops(loopcount, MAT_N):
 
 def benchmark(workers, memory, loopcount, matn):
     iterable = [(loopcount, matn) for i in range(workers)]
-    initargs = {'runtime_memory': memory}
 
-    with Pool(initargs=initargs) as pool:
-        start_time = time.time()
-        map_future = pool.starmap_async(compute_flops, iterable)
-        worker_futures = map_future._futures
-        results = map_future.get()
-        end_time = time.time()
+    exc = FunctionExecutor(runtime_memory=memory)
+    start_time = time.time()
+    worker_futures = exc.map(compute_flops, iterable)
+    results = exc.get_result()
+    end_time = time.time()
 
     worker_stats = [f.stats for f in worker_futures]
     total_time = end_time-start_time
@@ -67,7 +82,7 @@ def run_benchmark(workers, memory, outdir, name, loopcount, matn):
         res['loopcount'] = loopcount
         res['workers'] = workers
         res['MATN'] = matn
-        pickle.dump(res, open('{}/{}.pickle'.format(outdir, name), 'wb'), -1)
+        pickle.dump(res, open('{}/{}.pickle'.format(outdir, name), 'wb'))
     else:
         res = pickle.load(open('{}/{}.pickle'.format(outdir, name), 'rb'))
     create_plots(res, outdir, name)
