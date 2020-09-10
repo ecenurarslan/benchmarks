@@ -57,7 +57,7 @@ def create_execution_histogram(res_write, res_read, dst):
     for plot_i, (datum, l, c) in enumerate([(res_write, 'Write', WRITE_COLOR), (res_read, 'Read', READ_COLOR)]):
 
         start_time = datum['start_time']
-        time_rates = [(f['start_tstamp'], f['end_tstamp']) for f in datum['worker_stats']]
+        time_rates = [(f['worker_start_tstamp'], f['worker_end_tstamp']) for f in datum['worker_stats']]
         total_calls = len(time_rates)
 
         if plot_i == 0:
