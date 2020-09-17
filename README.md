@@ -1,4 +1,4 @@
-# Cloudbutton toolkit benchmarks
+# Lithops toolkit: Compute and Storage Benchmarks
 
 FaaS Service Flops benchmark:
 

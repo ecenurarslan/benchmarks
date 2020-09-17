@@ -19,8 +19,7 @@ import time
 import numpy as np
 import pickle as pickle
 
-from pywren_ibm_cloud.executor import FunctionExecutor
-#from cloudbutton.engine.executor import FunctionExecutor
+from lithops.executor import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
 
 
