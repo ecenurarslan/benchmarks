@@ -21,8 +21,7 @@ import hashlib
 import pickle
 import click
 
-from pywren_ibm_cloud.executor import FunctionExecutor
-#from cloudbutton.engine.executor import FunctionExecutor
+from lithops.executor import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_agg_bdwth_plot
 
 
