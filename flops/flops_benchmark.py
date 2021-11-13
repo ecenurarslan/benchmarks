@@ -19,7 +19,7 @@ import time
 import numpy as np
 import pickle as pickle
 
-from lithops.executor import FunctionExecutor
+from lithops.executors import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_total_gflops_plot
 
 

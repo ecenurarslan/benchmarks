@@ -21,7 +21,7 @@ import hashlib
 import pickle
 import click
 
-from lithops.executor import FunctionExecutor
+from lithops.executors import FunctionExecutor
 from plots import create_execution_histogram, create_rates_histogram, create_agg_bdwth_plot
 
 
